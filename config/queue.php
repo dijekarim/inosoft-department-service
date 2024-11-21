@@ -73,7 +73,7 @@ return [
         ],
 
         'rabbitmq' => [
-            'driver' => 'rabbitmq', 
+            'driver' => 'rabbitmq',
             'hosts' => [
                 [
                     'host' => env('RABBITMQ_HOST', '127.0.0.1'),
