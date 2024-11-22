@@ -6,4 +6,5 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['middleware' => 'api'], function ($router) {
     Route::post('/register', [DepartmentController::class, 'register'])->name('department.register');
+    Route::get('/departments', [DepartmentController::class, 'index'])->name('department.index');
 });
