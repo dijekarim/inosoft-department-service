@@ -23,22 +23,30 @@ class DepartmentController extends Controller
         if (!$authenticatedUser) {
             return response()->json(['error' => 'User not authenticated.'], 401);
         }
+        
+        if (!($authenticatedUser->hasPermission('register_course'))) {
+            return response()->json(['error' => 'You are not allowed to register courses.'], 401);
+        }
 
         // Check if the user is a student
-        if ($authenticatedUser->role === 'student') {
+        if ($authenticatedUser->role->name === 'STUDENT') {
             $userId = $authenticatedUser->id;
-        } else if ($authenticatedUser->role === 'admin') {
-            // Validate user_id only if the role is not 'student'
-            $request->validate([
-                'user_id' => 'required|exists:users,id',
-            ]);
+        } else if ($authenticatedUser->role->name === 'ADMIN') {
             $userId = $request->user_id;
         } else {
             return response()->json(['error' => 'You are not allowed to register.'], 401);
         }
-    
-        $user = User::find($userId);
+        
+        // Check if the user exists
+        $user = User::join('roles', 'users.role_id', '=', 'roles.id')->where('users.id', $userId)->where('roles.name', 'STUDENT')->first();
+        if (!$user) {
+            return response()->json(['error' => 'User not found.'], 404);
+        }
+
         $course = Course::find($request->course_id);
+        if (!$course) {
+            return response()->json(['error' => 'Course not found.'], 404);
+        }
     
         // Get the department associated with the course
         $department = $course->department;
@@ -53,13 +61,15 @@ class DepartmentController extends Controller
         }
 
         // Check if the department quota is full
-        $registrationsCount = Registration::whereIn(
-            'course_id', 
-            $department->courses->pluck('id')
-        )->count();
-
+        $registrationsCount = Registration::where('department_id', $department->id)->where('user_id', '!=', $user->id)->distinct('user_id')->count();
         if ($registrationsCount >= $department->quota) {
             return response()->json(['error' => 'The department has reached its quota.'], 422);
+        }
+
+        // Check if the user has already registered to the course
+        $existingRegistration = Registration::where('user_id', $user->id)->where('course_id', $course->id)->first();
+        if ($existingRegistration) {
+            return response()->json(['error' => 'You have already registered to this course.'], 422);
         }
     
         // Check grade requirements
@@ -74,6 +84,7 @@ class DepartmentController extends Controller
             // Proceed with registration
             Registration::create([
                 'user_id' => $user->id,
+                'department_id' => $department->id,
                 'course_id' => $course->id,
                 'registration_date' => now(),
             ]);
@@ -98,7 +109,7 @@ class DepartmentController extends Controller
             if ($e->getCode() == 23000) { // error duplicate entry
                 return response()->json(['error' => 'Registration failed. You already have registered to this course.'], 500);
             }
-            return response()->json(['error' => 'Registration failed.'], 500);
+            return response()->json(['error' => 'Registration failed. Please contact the administrator.'], 500);
         }
     }
 
@@ -107,6 +118,10 @@ class DepartmentController extends Controller
         $authenticatedUser = Auth::user();
         if (!$authenticatedUser) {
             return response()->json(['error' => 'User not authenticated.'], 401);
+        }
+
+        if (!($authenticatedUser->hasPermission('list_departments'))) {
+            return response()->json(['error' => 'You are not allowed to register courses.'], 401);
         }
         
         $departments = Redis::get('department_lists');
@@ -118,6 +133,57 @@ class DepartmentController extends Controller
         } else {
             return response()->json(['data' => json_decode($departments)]);
         }
+    }
 
+    public function show(Request $request, $id) {
+        // Get the authenticated user
+        $authenticatedUser = Auth::user();
+        if (!$authenticatedUser) {
+            return response()->json(['error' => 'User not authenticated.'], 401);
+        }
+
+        if (!($authenticatedUser->hasPermission('view_departments'))) {
+            return response()->json(['error' => 'You are not allowed to register courses.'], 401);
+        }
+        
+        $department = Redis::get('department_' . $id);
+        if (!$department) {
+            $department = Department::with('courses')->find($id);
+            Redis::set('department_' . $id, json_encode($department));
+            return response()->json(['data' => $department]);
+        } else {
+            return response()->json(['data' => json_decode($department)]);
+        }
+    }
+
+    public function store(Request $request) {
+        // Get the authenticated user
+        $authenticatedUser = Auth::user();
+        if (!$authenticatedUser) {
+            return response()->json(['error' => 'User not authenticated.'], 401);
+        }
+
+        if (!($authenticatedUser->hasPermission('create_departments'))) {
+            return response()->json(['error' => 'You are not allowed to Create departments.'], 401);
+        }
+
+        try {
+            DB::beginTransaction(); // Start a transaction
+
+            $department = Department::create([
+                'name' => $request->name,
+                'start_reg' => $request->start_reg,
+                'end_reg' => $request->end_reg,
+                'min_math_grade' => $request->min_math_grade,
+                'min_science_grade' => $request->min_science_grade,
+                'quota' => $request->quota,
+            ]);
+
+            DB::commit();
+            return response()->json(['message' => 'Department created successfully.'], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Department creation failed. Please contact the administrator.'], 500);
+        }
     }
 }

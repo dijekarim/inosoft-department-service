@@ -36,12 +36,12 @@ class UpdateRegisteredStudents implements ShouldQueue
 
         // update department
         $department = Department::find($this->data['department_id']);
-        $department->registered_students = $departmentRegisteredStudents;
+        $department->total_students_registered = $departmentRegisteredStudents;
         $department->save();
         
         // update course
         $course = Course::find($this->data['course_id']);
-        $course->registered_students = $courseRegisteredStudents;
+        $course->total_students_registered = $courseRegisteredStudents;
         $course->save();
         
         // update redis
