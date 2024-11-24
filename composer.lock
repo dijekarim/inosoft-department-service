@@ -216,12 +216,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/dijekarim/inosoft-university-models.git",
-                "reference": "ccf2af8bf6b245ce57577c09c85503d43f60df26"
+                "reference": "a8e986948eaaa3508b6676cb79bf724864f5218c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dijekarim/inosoft-university-models/zipball/ccf2af8bf6b245ce57577c09c85503d43f60df26",
-                "reference": "ccf2af8bf6b245ce57577c09c85503d43f60df26",
+                "url": "https://api.github.com/repos/dijekarim/inosoft-university-models/zipball/a8e986948eaaa3508b6676cb79bf724864f5218c",
+                "reference": "a8e986948eaaa3508b6676cb79bf724864f5218c",
                 "shasum": ""
             },
             "default-branch": true,
@@ -244,7 +244,7 @@
                 "source": "https://github.com/dijekarim/inosoft-university-models/tree/master",
                 "issues": "https://github.com/dijekarim/inosoft-university-models/issues"
             },
-            "time": "2024-11-21T08:49:13+00:00"
+            "time": "2024-11-24T15:42:55+00:00"
         },
         {
             "name": "doctrine/inflector",
